@@ -2,6 +2,7 @@
 
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/core/component.h"
+#include "esphome/core/gpio.h"
 
 #include "ACS712.h"
 

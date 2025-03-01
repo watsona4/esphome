@@ -18,10 +18,10 @@ void ACS712Component::setup() {
   this->pin_->setup();
   this->pin_->digital_write(true);
   ACS_ = new ACS712(this->pin_->get_pin(), this->voltage_, this->adc_steps_, this->mVperA_);
-  ACS->autoMidPoint();
-  ESP_LOGD("acs712", "MidPoint: %d", ACS->getMidPoint());
-  ACS->setNoisemV(43);
-  ESP_LOGD("acs712", "Noise mV: %d", ACS->getNoisemV());
+  ACS_->autoMidPoint();
+  ESP_LOGD("acs712", "MidPoint: %d", ACS_->getMidPoint());
+  ACS_->setNoisemV(43);
+  ESP_LOGD("acs712", "Noise mV: %d", ACS_->getNoisemV());
 }
 void ACS712Component::dump_config() {
   ESP_LOGCONFIG(TAG, "ACS712:");
@@ -39,11 +39,11 @@ void ACS712Component::update() {
   float average = 0;
   int count = 5;
   for (int i = 0; i < count; i++) {
-    average += ACS->mA_AC();
+    average += ACS_->mA_AC();
   }
-  float amps = average / count / 1000.0;
+  float current = average / count / 1000.0;
 
-  ESP_LOGD(TAG, "Got current=%.2f mA", amps);
+  ESP_LOGD(TAG, "Got current=%.2f mA", current);
 
   if (this->current_sensor_ != nullptr)
     this->current_sensor_->publish_state(current);

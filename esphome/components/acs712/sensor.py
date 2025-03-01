@@ -1,4 +1,3 @@
-from esphome import pins
 import esphome.codegen as cg
 from esphome.components import sensor
 import esphome.config_validation as cv
@@ -13,6 +12,8 @@ from esphome.const import (
 )
 from esphome.cpp_helpers import gpio_pin_expression
 
+from . import validate_adc_pin
+
 CONF_MVPERA = "mvpera"
 CONF_ADC_STEPS = "adc_steps"
 
@@ -22,7 +23,7 @@ ACS712Component = acs712_ns.class_("ACS712Component", cg.PollingComponent)
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(ACS712Component),
-        cv.Required(CONF_PIN): pins.internal_gpio_input_pullup_pin_schema,
+        cv.Required(CONF_PIN): validate_adc_pin,
         cv.Optional(CONF_CURRENT): sensor.sensor_schema(
             unit_of_measurement=UNIT_MILLIAMP,
             accuracy_decimals=2,

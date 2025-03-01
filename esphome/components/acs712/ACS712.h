@@ -10,7 +10,7 @@
 // Tested with a RobotDyn ACS712 20A breakout + UNO.
 //
 
-#include "Arduino.h"
+#include <Arduino.h>
 
 #define ACS712_LIB_VERSION (F("0.3.10"))
 
