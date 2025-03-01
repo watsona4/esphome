@@ -1,0 +1,9 @@
+sensor:
+  - platform: acs712
+    pin: A0
+    mvpera: ${mvpera}
+    voltage: ${voltage}
+    adc_steps: ${adc_steps}
+    current:
+      id: acs712_current
+      name: ACS712 Current

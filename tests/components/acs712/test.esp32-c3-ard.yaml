@@ -1,0 +1,6 @@
+substitutions:
+  mvpera: 100
+  voltage: 3.3
+  adc_steps: 4096
+
+<<: !include common.yaml
