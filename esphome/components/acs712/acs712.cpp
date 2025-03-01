@@ -17,7 +17,7 @@ void ACS712Component::setup() {
   this->pin_->digital_write(true);
   this->pin_->setup();
   this->pin_->digital_write(true);
-  ACS_ = new ACS712(this->pin_->get_pin(), this->voltage_, this->adc_steps_, this->model_);
+  ACS_ = new ACS712(this->pin_->get_pin(), this->voltage_, this->adc_steps_, this->mVperA_);
   ACS->autoMidPoint();
   ESP_LOGD("acs712", "MidPoint: %d", ACS->getMidPoint());
   ACS->setNoisemV(43);
@@ -25,13 +25,7 @@ void ACS712Component::setup() {
 }
 void ACS712Component::dump_config() {
   ESP_LOGCONFIG(TAG, "ACS712:");
-  if (this->model_ == ACS712_MODEL_5A) {
-    ESP_LOGCONFIG(TAG, "  Model: 5A");
-  } else if (this->model_ == ACS712_MODEL_10A) {
-    ESP_LOGCONFIG(TAG, "  Model: 10A");
-  } else if (this->model_ == ACS712_MODEL_20A) {
-    ESP_LOGCONFIG(TAG, "  Model: 20A");
-  }
+  ESP_LOGCONFIG(TAG, "  mV per A: %.1f", this->mVperA_);
   ESP_LOGCONFIG(TAG, "  ADC Steps: %d", this->adc_steps_);
   ESP_LOGCONFIG(TAG, "  Voltage: %.1f", this->voltage_);
   LOG_PIN("  Pin: ", this->pin_);
