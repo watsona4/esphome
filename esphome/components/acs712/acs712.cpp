@@ -1,5 +1,8 @@
 // Implementation based on:
-//  - ACS712_sensor_library: https://github.com/marianomd/acs712-esphome/blob/main/acs712_component.h
+//  - ACS712_sensor_library:
+//  https://github.com/marianomd/acs712-esphome/blob/main/acs712_component.h
+//  https://github.com/RobTillaart/ACS712/blob/master/ACS712.h
+//  https://github.com/RobTillaart/ACS712/blob/master/ACS712.cpp
 
 #include "acs712.h"
 #include "esphome/core/log.h"
@@ -9,61 +12,50 @@ namespace acs712 {
 
 static const char *const TAG = "acs712";
 
-void ACS712Component::update() {
-  uint8_t data[5];
-  if (!this->read_data_(data)) {
-    this->status_set_warning();
-    return;
-  }
-  const uint16_t raw_temperature = uint16_t(data[2]) * 10 + (data[3] & 0x7F);
-  float temperature = raw_temperature / 10.0f;
-  if ((data[3] & 0x80) != 0) {
-    // negative
-    temperature *= -1;
-  }
-
-  const uint16_t raw_humidity = uint16_t(data[0]) * 10 + data[1];
-  float humidity = raw_humidity / 10.0f;
-
-  ESP_LOGD(TAG, "Got temperature=%.2f°C humidity=%.2f%%", temperature, humidity);
-  if (this->temperature_sensor_ != nullptr)
-    this->temperature_sensor_->publish_state(temperature);
-  if (this->humidity_sensor_ != nullptr)
-    this->humidity_sensor_->publish_state(humidity);
-  this->status_clear_warning();
-}
 void ACS712Component::setup() {
   ESP_LOGCONFIG(TAG, "Setting up ACS712...");
-  uint8_t data[5];
-  if (!this->read_data_(data)) {
-    this->mark_failed();
-    return;
-  }
+  this->pin_->digital_write(true);
+  this->pin_->setup();
+  this->pin_->digital_write(true);
+  ACS_ = new ACS712(this->pin_->get_pin(), this->voltage_, this->adc_steps_, this->model_);
+  ACS->autoMidPoint();
+  ESP_LOGD("acs712", "MidPoint: %d", ACS->getMidPoint());
+  ACS->setNoisemV(43);
+  ESP_LOGD("acs712", "Noise mV: %d", ACS->getNoisemV());
 }
 void ACS712Component::dump_config() {
-  ESP_LOGD(TAG, "ACS712:");
-  LOG_I2C_DEVICE(this);
-  if (this->is_failed()) {
-    ESP_LOGE(TAG, "Communication with ACS712 failed!");
+  ESP_LOGCONFIG(TAG, "ACS712:");
+  if (this->model_ == ACS712_MODEL_5A) {
+    ESP_LOGCONFIG(TAG, "  Model: 5A");
+  } else if (this->model_ == ACS712_MODEL_10A) {
+    ESP_LOGCONFIG(TAG, "  Model: 10A");
+  } else if (this->model_ == ACS712_MODEL_20A) {
+    ESP_LOGCONFIG(TAG, "  Model: 20A");
   }
-  LOG_SENSOR("  ", "Temperature", this->temperature_sensor_);
-  LOG_SENSOR("  ", "Humidity", this->humidity_sensor_);
+  ESP_LOGCONFIG(TAG, "  ADC Steps: %d", this->adc_steps_);
+  ESP_LOGCONFIG(TAG, "  Voltage: %.1f", this->voltage_);
+  LOG_PIN("  Pin: ", this->pin_);
+  ESP_LOGCONFIG(TAG, "  Internal Pull-up: %s", ONOFF(this->pin_->get_flags() & gpio::FLAG_PULLUP));
+
+  LOG_UPDATE_INTERVAL(this);
+
+  LOG_SENSOR("  ", "Current", this->current_sensor_);
+}
+void ACS712Component::update() {
+  float average = 0;
+  int count = 5;
+  for (int i = 0; i < count; i++) {
+    average += ACS->mA_AC();
+  }
+  float amps = average / count / 1000.0;
+
+  ESP_LOGD(TAG, "Got current=%.2f mA", amps);
+
+  if (this->current_sensor_ != nullptr)
+    this->current_sensor_->publish_state(current);
+  this->status_clear_warning();
 }
 float ACS712Component::get_setup_priority() const { return setup_priority::DATA; }
-bool ACS712Component::read_data_(uint8_t *data) {
-  if (!this->read_bytes(0, data, 5)) {
-    ESP_LOGW(TAG, "Updating ACS712 failed!");
-    return false;
-  }
-
-  uint8_t checksum = data[0] + data[1] + data[2] + data[3];
-  if (data[4] != checksum) {
-    ESP_LOGW(TAG, "ACS712 Checksum invalid!");
-    return false;
-  }
-
-  return true;
-}
 
 }  // namespace acs712
 }  // namespace esphome
