@@ -1,6 +1,7 @@
 substitutions:
-  mvpera: 10
-  voltage: 5
-  adc_steps: 1024
+  pin: GPIO26
+  mvpera: "10"
+  voltage: "5"
+  adc_steps: "1024"
 
 <<: !include common.yaml

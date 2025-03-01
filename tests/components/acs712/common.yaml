@@ -1,6 +1,6 @@
 sensor:
   - platform: acs712
-    pin: A0
+    pin: ${pin}
     mvpera: ${mvpera}
     voltage: ${voltage}
     adc_steps: ${adc_steps}
