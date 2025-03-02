@@ -404,7 +404,7 @@ void ACS712::setADC(uint16_t (*f)(uint8_t), float volts, uint16_t maxADC) {
   _mVperStep = 1000.0 * volts / maxADC;  //  1x 1000 for V -> mV
   ESP_LOGD("setADC()", "_mVperStep: %d", _mVperStep);
   _mAPerStep = 1000.0 * _mVperStep / _mVperAmpere;
-  ESP_LOGD("setADC()", "_mAperStep: %d", _mAperStep);
+  ESP_LOGD("setADC()", "_mAPerStep: %d", _mAPerStep);
   _midPoint = maxADC / 2;
   ESP_LOGD("setADC()", "_midPoint: %d", _midPoint);
 }
