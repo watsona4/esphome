@@ -1,5 +1,4 @@
-#ifndef ACS712IMPL_H
-#define ACS712IMPL_H
+#pragma once
 //
 //    FILE: ACS712.h
 //  AUTHOR: Rob Tillaart, Pete Thompson
@@ -127,4 +126,3 @@ class ACS712 {
 };
 
 //  -- END OF FILE --
-#endif
