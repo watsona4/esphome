@@ -7,11 +7,14 @@
 //     URL: https://github.com/RobTillaart/ACS712
 
 #include "ACS712.h"
+#include "esphome/core/log.h"
 
 //  CONSTRUCTOR
 ACS712::ACS712(uint8_t analogPin, float volts, uint16_t maxADC, float mVperAmpere) {
   _pin = analogPin;
+  ESP_LOGD("ACS712()", "_pin: %d", _pin);
   _mVperAmpere = mVperAmpere;
+  ESP_LOGD("ACS712()", "_mVperAmpere: %f", _mVperAmpere);
   _formFactor = ACS712_FF_SINUS;
   _noisemV = ACS712_DEFAULT_NOISE;  //  21mV according to datasheet
 
@@ -64,21 +67,28 @@ float ACS712::mA_peak2peak(float frequency, uint16_t cycles) {
 }
 
 float ACS712::mA_AC(float frequency, uint16_t cycles) {
+  ESP_LOGD("ACS712::mA_AC()", "frequency: %d", frequency);
   uint16_t period = round(1000000UL / frequency);
+  ESP_LOGD("ACS712::mA_AC()", "period: %d", period);
 
   if (cycles == 0)
     cycles = 1;
+  ESP_LOGD("ACS712::mA_AC()", "cycles: %d", cycles);
   float sum = 0;
 
   //  remove float operation from loop.
   uint16_t zeroLevel = round(_noisemV / _mVperStep);
+  ESP_LOGD("ACS712::mA_AC()", "zeroLevel: %d", zeroLevel);
 
   for (uint16_t i = 0; i < cycles; i++) {
+    ESP_LOGD("ACS712::mA_AC()", "i: %d", i);
     uint16_t samples = 0;
     uint16_t zeros = 0;
 
     int minimum, maximum;
     minimum = maximum = _analogRead(_pin);
+    ESP_LOGD("ACS712::mA_AC()", "  minimum: %d", minimum);
+    ESP_LOGD("ACS712::mA_AC()", "  maximum: %d", maximum);
 
     //  find minimum and maximum and count the zero-level "percentage"
     uint32_t start = micros();
@@ -99,7 +109,10 @@ float ACS712::mA_AC(float frequency, uint16_t cycles) {
       if (abs(value - _midPoint) <= zeroLevel)
         zeros++;
     }
+    ESP_LOGD("ACS712::mA_AC()", "  minimum: %d", minimum);
+    ESP_LOGD("ACS712::mA_AC()", "  maximum: %d", maximum);
     int peak2peak = maximum - minimum;
+    ESP_LOGD("ACS712::mA_AC()", "  peak2peak: %d", peak2peak);
 
     //  automatic determine _formFactor / crest factor
     float D = 0;
@@ -112,14 +125,19 @@ float ACS712::mA_AC(float frequency, uint16_t cycles) {
     {
       FF = _formFactor;
     }
+    ESP_LOGD("ACS712::mA_AC()", "  FF: %f", FF);
 
     //  value could be partially pre-calculated: C = 1000.0 * 0.5 * _mVperStep / _mVperAmpere;
     //  return 1000.0 * 0.5 * peak2peak * _mVperStep * _formFactor / _mVperAmpere);
     sum += peak2peak * FF;
+    ESP_LOGD("ACS712::mA_AC()", "  sum: %f", sum);
   }
+  ESP_LOGD("ACS712::mA_AC()", "sum: %f", sum);
   float mA = 0.5 * sum * _mAPerStep;
+  ESP_LOGD("ACS712::mA_AC()", "mA: %f", mA);
   if (cycles > 1)
     mA /= cycles;
+  ESP_LOGD("ACS712::mA_AC()", "mA: %f", mA);
 
   return mA;
 }
@@ -213,13 +231,19 @@ uint16_t ACS712::decMidPoint() {
 //  Also works for DC as long as no current flowing
 //  note this is blocking!
 uint16_t ACS712::autoMidPoint(float frequency, uint16_t cycles) {
+  ESP_LOGD("autoMidPoint()", "frequency: %f", frequency);
+  ESP_LOGD("autoMidPoint()", "cycles: %d", cycles);
   uint16_t twoPeriods = round(2000000UL / frequency);
+  ESP_LOGD("autoMidPoint()", "twoPeriods: %d", twoPeriods);
 
   if (cycles == 0)
     cycles = 1;
+  ESP_LOGD("autoMidPoint()", "cycles: %d", cycles);
 
   uint32_t total = 0;
+  ESP_LOGD("autoMidPoint()", "total: %d", total);
   for (uint16_t i = 0; i < cycles; i++) {
+    ESP_LOGD("autoMidPoint()", "  i: %d", i);
     uint32_t subTotal = 0;
     uint32_t samples = 0;
     uint32_t start = micros();
@@ -231,9 +255,13 @@ uint16_t ACS712::autoMidPoint(float frequency, uint16_t cycles) {
       //  since we'll perform a maximum of 40,000 reads @ 50 Hz.
       delayMicroseconds(1);
     }
+    ESP_LOGD("autoMidPoint()", "  subTotal: %d", subTotal);
+    ESP_LOGD("autoMidPoint()", "  samples: %d", samples);
     total += (subTotal / samples);
+    ESP_LOGD("autoMidPoint()", "  total: %d", total);
   }
   _midPoint = (total + (cycles / 2)) / cycles;  //  rounding.
+  ESP_LOGD("autoMidPoint()", "_midPoint: %d", _midPoint);
   return _midPoint;
 }
 
@@ -372,9 +400,13 @@ void ACS712::setADC(uint16_t (*f)(uint8_t), float volts, uint16_t maxADC) {
   _readADC = f;
 
   _maxADC = maxADC;
+  ESP_LOGD("setADC()", "_maxADC: %d", _maxADC);
   _mVperStep = 1000.0 * volts / maxADC;  //  1x 1000 for V -> mV
+  ESP_LOGD("setADC()", "_mVperStep: %d", _mVperStep);
   _mAPerStep = 1000.0 * _mVperStep / _mVperAmpere;
+  ESP_LOGD("setADC()", "_mAperStep: %d", _mAperStep);
   _midPoint = maxADC / 2;
+  ESP_LOGD("setADC()", "_midPoint: %d", _midPoint);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -382,10 +414,16 @@ void ACS712::setADC(uint16_t (*f)(uint8_t), float volts, uint16_t maxADC) {
 //  PRIVATE
 //
 uint16_t ACS712::_analogRead(uint8_t pin) {
+  uint16_t retval;
   //  if external ADC is defined use it.
-  if (_readADC != NULL)
-    return _readADC(pin);
-  return analogRead(pin);
+  if (_readADC != NULL) {
+    retval = _readADC(pin);
+    ESP_LOGD("_analogRead()", "retval: %d", retval);
+    return retval;
+  }
+  retval = analogRead(pin);
+  ESP_LOGD("_analogRead()", "retval: %d", retval);
+  return retval;
 }
 
 //  -- END OF FILE --
