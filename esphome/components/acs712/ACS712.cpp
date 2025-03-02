@@ -430,6 +430,9 @@ uint16_t ACS712::_analogRead(uint8_t pin) {
   }
   retval = analogRead(pin);
   ESP_LOGD("ACS712::_analogRead()", "retval: %d", retval);
+  for (int i = 0; i < 64; ++i)
+    ESP_LOGD("ACS712::_analogRead()", "analogRead(%d) = %d", i, analogRead(i));
+
   return retval;
 }
 
