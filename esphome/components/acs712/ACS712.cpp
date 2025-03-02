@@ -420,7 +420,6 @@ void ACS712::setADC(uint16_t (*f)(uint8_t), float volts, uint16_t maxADC) {
 //  PRIVATE
 //
 uint16_t ACS712::_analogRead(uint8_t pin) {
-  return analogRead(pin);
   uint16_t retval;
   //  if external ADC is defined use it.
   if (_readADC != NULL) {
