@@ -19,9 +19,7 @@ void ACS712Component::setup() {
   this->pin_->digital_write(true);
   ACS_ = new ACS712(this->pin_->get_pin(), this->voltage_, this->adc_steps_, this->mVperA_);
   ACS_->autoMidPoint();
-  ESP_LOGD("acs712", "MidPoint: %d", ACS_->getMidPoint());
   ACS_->setNoisemV(43);
-  ESP_LOGD("acs712", "Noise mV: %d", ACS_->getNoisemV());
 }
 void ACS712Component::dump_config() {
   ESP_LOGCONFIG(TAG, "ACS712:");

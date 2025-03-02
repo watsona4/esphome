@@ -12,9 +12,7 @@
 //  CONSTRUCTOR
 ACS712::ACS712(uint8_t analogPin, float volts, uint16_t maxADC, float mVperAmpere) {
   _pin = analogPin;
-  ESP_LOGD("ACS712()", "_pin: %d", _pin);
   _mVperAmpere = mVperAmpere;
-  ESP_LOGD("ACS712()", "_mVperAmpere: %f", _mVperAmpere);
   _formFactor = ACS712_FF_SINUS;
   _noisemV = ACS712_DEFAULT_NOISE;  //  21mV according to datasheet
 
@@ -67,6 +65,12 @@ float ACS712::mA_peak2peak(float frequency, uint16_t cycles) {
 }
 
 float ACS712::mA_AC(float frequency, uint16_t cycles) {
+  ESP_LOGD("ACS712::ACS712()", "analogPin: %d", _pin);
+  ESP_LOGD("ACS712::ACS712()", "maxADC: %d", _maxADC);
+  ESP_LOGD("ACS712::ACS712()", "_mVperStep: %f", _mVperStep);
+  ESP_LOGD("ACS712::ACS712()", "_mAPerStep: %f", _mAPerStep);
+  ESP_LOGD("ACS712Component::setup()", "MidPoint: %d", getMidPoint());
+  ESP_LOGD("ACS712Component::setup()", "Noise mV: %d", getNoisemV());
   ESP_LOGD("ACS712::mA_AC()", "frequency: %d", frequency);
   uint16_t period = round(1000000UL / frequency);
   ESP_LOGD("ACS712::mA_AC()", "period: %d", period);
@@ -109,6 +113,8 @@ float ACS712::mA_AC(float frequency, uint16_t cycles) {
       if (abs(value - _midPoint) <= zeroLevel)
         zeros++;
     }
+    ESP_LOGD("ACS712::mA_AC()", "  zeros: %d", zeros);
+    ESP_LOGD("ACS712::mA_AC()", "  samples: %d", samples);
     ESP_LOGD("ACS712::mA_AC()", "  minimum: %d", minimum);
     ESP_LOGD("ACS712::mA_AC()", "  maximum: %d", maximum);
     int peak2peak = maximum - minimum;
@@ -414,15 +420,16 @@ void ACS712::setADC(uint16_t (*f)(uint8_t), float volts, uint16_t maxADC) {
 //  PRIVATE
 //
 uint16_t ACS712::_analogRead(uint8_t pin) {
+  return analogRead(pin);
   uint16_t retval;
   //  if external ADC is defined use it.
   if (_readADC != NULL) {
     retval = _readADC(pin);
-    ESP_LOGD("_analogRead()", "retval: %d", retval);
+    ESP_LOGD("ACS712::_analogRead()", "retval: %d", retval);
     return retval;
   }
   retval = analogRead(pin);
-  ESP_LOGD("_analogRead()", "retval: %d", retval);
+  ESP_LOGD("ACS712::_analogRead()", "retval: %d", retval);
   return retval;
 }
 
