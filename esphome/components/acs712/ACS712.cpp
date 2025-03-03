@@ -65,12 +65,6 @@ float ACS712::mA_peak2peak(float frequency, uint16_t cycles) {
 }
 
 float ACS712::mA_AC(float frequency, uint16_t cycles) {
-  ESP_LOGD("ACS712::ACS712()", "analogPin: %d", _pin);
-  ESP_LOGD("ACS712::ACS712()", "maxADC: %d", _maxADC);
-  ESP_LOGD("ACS712::ACS712()", "_mVperStep: %f", _mVperStep);
-  ESP_LOGD("ACS712::ACS712()", "_mAPerStep: %f", _mAPerStep);
-  ESP_LOGD("ACS712Component::setup()", "MidPoint: %d", getMidPoint());
-  ESP_LOGD("ACS712Component::setup()", "Noise mV: %d", getNoisemV());
   ESP_LOGD("ACS712::mA_AC()", "frequency: %d", frequency);
   uint16_t period = round(1000000UL / frequency);
   ESP_LOGD("ACS712::mA_AC()", "period: %d", period);
@@ -91,11 +85,10 @@ float ACS712::mA_AC(float frequency, uint16_t cycles) {
 
     int minimum, maximum;
     minimum = maximum = _analogRead(_pin);
-    ESP_LOGD("ACS712::mA_AC()", "  minimum: %d", minimum);
-    ESP_LOGD("ACS712::mA_AC()", "  maximum: %d", maximum);
 
     //  find minimum and maximum and count the zero-level "percentage"
     uint32_t start = micros();
+    ESP_LOGD("ACS712::mA_AC()", "  start: %d", start);
     while (micros() - start < period)  // UNO ~180 samples...
     {
       samples++;
@@ -104,6 +97,7 @@ float ACS712::mA_AC(float frequency, uint16_t cycles) {
       {
         value = (value + _analogRead(_pin)) / 2;
       }
+      ESP_LOGD("ACS712::mA_AC()", "    value: %d", value);
       //  determine extremes
       if (value < minimum)
         minimum = value;
@@ -149,19 +143,24 @@ float ACS712::mA_AC(float frequency, uint16_t cycles) {
 }
 
 float ACS712::mA_AC_sampling(float frequency, uint16_t cycles) {
+  ESP_LOGD("ACS712::mA_AC_sampling()", "frequency: %d", frequency);
   uint32_t period = round(1000000UL / frequency);
+  ESP_LOGD("ACS712::mA_AC_sampling()", "period: %d", period);
 
   if (cycles == 0)
     cycles = 1;
+  ESP_LOGD("ACS712::mA_AC_sampling()", "cycles: %d", cycles);
   float sum = 0;
 
   //  float noiseLevel = _noisemV/_mVperStep;
 
   for (uint16_t i = 0; i < cycles; i++) {
+    ESP_LOGD("ACS712::mA_AC_sampling()", "i: %d", i);
     uint16_t samples = 0;
     float sumSquared = 0;
 
     uint32_t start = micros();
+    ESP_LOGD("ACS712::mA_AC_sampling()", "  start: %d", start);
     while (micros() - start < period) {
       samples++;
       int value = _analogRead(_pin);
@@ -169,6 +168,7 @@ float ACS712::mA_AC_sampling(float frequency, uint16_t cycles) {
       {
         value = (value + _analogRead(_pin)) / 2;
       }
+      ESP_LOGD("ACS712::mA_AC_sampling()", "    value: %d", value);
       float current = value - _midPoint;
       sumSquared += (current * current);
       //  not adding noise squared might be more correct for small currents.
@@ -177,11 +177,17 @@ float ACS712::mA_AC_sampling(float frequency, uint16_t cycles) {
       //    sumSquared += (current * current);
       //  }
     }
+    ESP_LOGD("ACS712::mA_AC_sampling()", "  samples: %d", samples);
+    ESP_LOGD("ACS712::mA_AC_sampling()", "  sumSquared: %d", sumSquared);
     sum += sqrt(sumSquared / samples);
+    ESP_LOGD("ACS712::mA_AC_sampling()", "  sum: %f", sum);
   }
+  ESP_LOGD("ACS712::mA_AC_sampling()", "sum: %f", sum);
   float mA = sum * _mAPerStep;
+  ESP_LOGD("ACS712::mA_AC_sampling()", "mA: %f", mA);
   if (cycles > 1)
     mA /= cycles;
+  ESP_LOGD("ACS712::mA_AC_sampling()", "mA: %f", mA);
 
   return mA;
 }
@@ -237,37 +243,38 @@ uint16_t ACS712::decMidPoint() {
 //  Also works for DC as long as no current flowing
 //  note this is blocking!
 uint16_t ACS712::autoMidPoint(float frequency, uint16_t cycles) {
-  ESP_LOGD("autoMidPoint()", "frequency: %f", frequency);
-  ESP_LOGD("autoMidPoint()", "cycles: %d", cycles);
+  ESP_LOGD("ACS712::autoMidPoint()", "frequency: %f", frequency);
+  ESP_LOGD("ACS712::autoMidPoint()", "cycles: %d", cycles);
   uint16_t twoPeriods = round(2000000UL / frequency);
-  ESP_LOGD("autoMidPoint()", "twoPeriods: %d", twoPeriods);
+  ESP_LOGD("ACS712::autoMidPoint()", "twoPeriods: %d", twoPeriods);
 
   if (cycles == 0)
     cycles = 1;
-  ESP_LOGD("autoMidPoint()", "cycles: %d", cycles);
+  ESP_LOGD("ACS712::autoMidPoint()", "cycles: %d", cycles);
 
   uint32_t total = 0;
-  ESP_LOGD("autoMidPoint()", "total: %d", total);
+  ESP_LOGD("ACS712::autoMidPoint()", "total: %d", total);
   for (uint16_t i = 0; i < cycles; i++) {
-    ESP_LOGD("autoMidPoint()", "  i: %d", i);
+    ESP_LOGD("ACS712::autoMidPoint()", "  i: %d", i);
     uint32_t subTotal = 0;
     uint32_t samples = 0;
     uint32_t start = micros();
     while (micros() - start < twoPeriods) {
       uint16_t reading = _analogRead(_pin);
+      ESP_LOGD("ACS712::autoMidPoint()", "    reading: %d", reading);
       subTotal += reading;
       samples++;
       //  Delaying prevents overflow
       //  since we'll perform a maximum of 40,000 reads @ 50 Hz.
       delayMicroseconds(1);
     }
-    ESP_LOGD("autoMidPoint()", "  subTotal: %d", subTotal);
-    ESP_LOGD("autoMidPoint()", "  samples: %d", samples);
+    ESP_LOGD("ACS712::autoMidPoint()", "  subTotal: %d", subTotal);
+    ESP_LOGD("ACS712::autoMidPoint()", "  samples: %d", samples);
     total += (subTotal / samples);
-    ESP_LOGD("autoMidPoint()", "  total: %d", total);
+    ESP_LOGD("ACS712::autoMidPoint()", "  total: %d", total);
   }
   _midPoint = (total + (cycles / 2)) / cycles;  //  rounding.
-  ESP_LOGD("autoMidPoint()", "_midPoint: %d", _midPoint);
+  ESP_LOGD("ACS712::autoMidPoint()", "_midPoint: %d", _midPoint);
   return _midPoint;
 }
 
@@ -420,19 +427,11 @@ void ACS712::setADC(uint16_t (*f)(uint8_t), float volts, uint16_t maxADC) {
 //  PRIVATE
 //
 uint16_t ACS712::_analogRead(uint8_t pin) {
-  uint16_t retval;
   //  if external ADC is defined use it.
   if (_readADC != NULL) {
-    retval = _readADC(pin);
-    ESP_LOGD("ACS712::_analogRead()", "retval: %d", retval);
-    return retval;
+    return _readADC(pin);
   }
-  retval = analogRead(pin);
-  ESP_LOGD("ACS712::_analogRead()", "retval: %d", retval);
-  for (int i = 0; i < 64; ++i)
-    ESP_LOGD("ACS712::_analogRead()", "analogRead(%d) = %d", i, analogRead(i));
-
-  return retval;
+  return analogRead(pin);
 }
 
 //  -- END OF FILE --

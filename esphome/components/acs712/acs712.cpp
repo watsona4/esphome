@@ -14,10 +14,10 @@ static const char *const TAG = "acs712";
 
 void ACS712Component::setup() {
   ESP_LOGCONFIG(TAG, "Setting up ACS712...");
-  this->pin_->digital_write(true);
-  this->pin_->setup();
-  this->pin_->digital_write(true);
-  ACS_ = new ACS712(this->pin_->get_pin(), this->voltage_, this->adc_steps_, this->mVperA_);
+  //this->pin_->digital_write(true);
+  //this->pin_->setup();
+  //this->pin_->digital_write(true);
+  ACS_ = new ACS712(A0/*this->pin_->get_pin()*/, this->voltage_, this->adc_steps_, this->mVperA_);
   ACS_->autoMidPoint();
   ACS_->setNoisemV(43);
 }
